@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en" class="h-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multi input Bootstrap/JQuery</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/mdbootstrap/4.19.1/css/mdb.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.2/css/all.css">
+</head>
+<body class="h-100">
+  <div class="container d-flex flex-column justify-content-center h-100">
+    <div class="form-group">
+      <label>Attributs<span class="ml-2 text-black-50">(facultatif)</span></label>
+
+      <div id="attributesDiv">
+        <a tabindex="0" class="btn btn-primary btn-sm text-white" type="button">Ajouter un attribut</a>
+      </div>
+    </div>
+    <small>Exemple d'attribut: <span class="font-weight-bold">Couleur</span> (exemple de valeurs: <span class="font-weight-bold">Rouge, Bleu, Vert</span>)</small>
+  </div>
+
+  <style>
+    /* Multipills input style */
+    .multipills-container .multipills-add-value {
+      font-size: 24px;
+      height: 40px;
+    }
+    /* End Multipills input style */
+  </style>
+
+  <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+  <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js" integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI" crossorigin="anonymous"></script>
+  <script>
+    /* global $ */
+    $.fn.multiPills = function(action) {
+      const valueTheme = '<div class="badge badge-pill badge-light d-flex align-items-center mx-1 my-1">STR_VAL<i class="multipills-remove-value fas fa-times ml-1 text-black-50"></i></div>'
+
+      const container = $(this)
+      
+      // Adding values badges
+      function addValue(value) {
+        const values = $(container.find('.multipills-values'))
+        const valueHtml = $(valueTheme)
+
+        let valueFormatted = $.trim(value)
+        valueFormatted = valueFormatted.charAt(0).toUpperCase() + valueFormatted.slice(1)
+
+        // Check if attribute value doesn't exist
+        const addBtn = $(container).find('.multipills-add-value')
+        const popover = $('#' + addBtn.attr('aria-describedby'))
+        const errMsg = $(popover.find('.invalid-feedback'))
+        const input = $(popover.find('input'))
+        const valuesStr = []
+        console.log(values.children('div.badge'))
+        values.children('div.badge').each(function() {
+          valuesStr.push($(this).text().toLowerCase())
+        })
+
+        if (valuesStr.includes(value.toLowerCase())) {
+          errMsg.text('Cette valeur existe déjà')
+          input.addClass('is-invalid')
+          return false
+        } else if (value.length > 20) {
+          errMsg.text("La valeur doit faire moins de 30 charactères")
+          input.addClass('is-invalid')
+          return false
+        }
+
+        valueHtml.html(valueHtml.html().replace('STR_VAL', valueFormatted))
+
+        // Ability to remove item
+        const removeButton = $(valueHtml.find('.multipills-remove-value'))
+        removeButton.click(function() {
+          $(this).parent().remove()
+        })
+
+        values.append(valueHtml)
+
+        return true
+      }
+
+      if (action === 'get') {
+        if ($(this).hasClass('multipills-container') && container.data('multipills')) {
+          const values = []
+          $(container.find('.multipills-values')).children('div.badge').each(function() {
+            values.push($(this).text())
+          })
+
+          return values
+        }
+
+        return []
+
+      } else {
+        // Init
+        console.log(!container.data('multipills'))
+        console.log($(this).hasClass('multipills-container'))
+        if ($(this).hasClass('multipills-container') && !container.data('multipills')) {
+          container.data('multipills', true)
+
+          container.addClass('multipills-container w-100 d-flex justify-content-between align-items-center')
+          
+          // Add content
+          container.html(`
+            <div class="multipills-values d-flex flex-wrap"></div>
+            <i class="multipills-add-value p-2 fas fa-plus"></i>
+          `)
+
+          const values = $(container.find('.multipills-values'))
+          const addButton = $(container).find('.multipills-add-value')
+
+          // Add adding popover
+          addButton.popover({
+            container: 'body',
+            placement: 'top',
+            html: true,
+            title: `
+              <div class="w-100 d-flex justify-content-between align-items-center">
+                Ajouter une valeur
+                <i class="fas fa-times text-black-50"></i>
+              </div>
+            `,
+            content: $(`
+              <div class="form-group mb-0">
+                <input type="text" class="form-control w-100" placeholder="Valeur">
+                <div class="invalid-feedback"></div>
+                <div class="d-flex justify-content-between mt-2">
+                  <button class="btn btn-sm btn-outline-grey" type="button">Annuler</button>
+                  <button class="btn btn-sm btn-success" type="button">Ajouter</button>
+                </div>
+              </div>
+            `)
+          })
+          
+          // Actions on popover
+          addButton.on('shown.bs.popover', function() {
+            const popover = $('#' + addButton.attr('aria-describedby'))
+
+            // Closing
+            popover.find('.popover-header i.fa-times, .popover-body button:first').each(function() {
+              $(this).click(function() {
+                addButton.popover('hide')
+              })
+            })
+            
+            // Submitting
+            popover.find('.popover-body button:nth-child(2)').click(function() {
+              const input = $(popover.find('.popover-body input'))
+              const value = input.val()
+
+              if (value !== '') {
+                addValue(value) && input.val('') && input.removeClass('is-invalid')
+              }
+            })
+            popover.find('.popover-body input').on('keypress', function(e) {
+              if (e.which === 13) {
+                const input = $(this)
+                const value = input.val()
+
+                if (value !== '') {
+                  addValue(value) && input.val('') && input.removeClass('is-invalid')
+                }
+              }
+            })
+          })
+
+          // Add remove event on all values already added
+          values.find('div.badge .multipills-remove-value').each(function() {
+            $(this).click(function() {
+              $(this).parent().remove()
+            })
+          })
+
+          // Add value if given
+          console.log(action)
+          if (Array.isArray(action) && action.length > 0) {
+            action.forEach(function(value) {
+              addValue(value)
+            })
+          }
+        }
+      }
+    }
+
+    $(document).ready(function() {
+      $('#attributesDiv').multiPills([' rouge', 'vert'])
+
+      const btnAttr = $('#attributesDiv > a.btn')
+      function addAttribute(attribute) {
+        const attrTheme = `
+          <div class="d-flex align-items-center flex-wrap flex-md-nowrap">
+            <i class="fa fa-trash text-black-50 p-1"></i>
+            <span class="font-weight-bold mr-2">STR_ATTR</span>
+            <div id="attributes" class="multipills-container"></div>
+          </div>
+        `
+        const attrContainer = $('#attributesDiv')
+
+        // Check if attribute doesn't exist
+        const popover = $('#' + btnAttr.attr('aria-describedby'))
+        const errMsg = $(popover.find('.invalid-feedback'))
+        const input = $(popover.find('input'))
+        const attributes = []
+        attrContainer.children('div').each(function() {
+          attributes.push($(this).children('span').text().toLowerCase())
+        })
+
+        if (attributes.includes(attribute.toLowerCase())) {
+          errMsg.text('Cet attribut existe déjà')
+          input.addClass('is-invalid')
+          return false
+        } else if (attribute.length < 3 || attribute.length > 30) {
+          errMsg.text("L'attribut doit faire entre 3 et 30 charactères")
+          input.addClass('is-invalid')
+          return false
+        }
+
+        const attributeHtml = $(attrTheme.replace('STR_ATTR', attribute))
+        
+        // Activate values
+        attributeHtml.find('.multipills-container').multiPills()
+
+        // Ability to remove attribute
+        attributeHtml.children('i.fa-trash').click(function() {
+          const attributeDiv = $(this).parent()
+
+          attributeDiv.find('.multipills-add-value').popover('dispose')
+          attributeDiv.remove()
+        })
+
+        attrContainer.append(attributeHtml)
+
+        btnAttr.popover('hide')
+
+        return true
+      }
+
+      // Add adding popover
+      btnAttr.popover({
+        container: 'body',
+        placement: 'right',
+        // trigger: 'focus',
+        html: true,
+        title: `
+          <div class="w-100 d-flex justify-content-between align-items-center">
+            Ajouter un attribut
+            <i class="fas fa-times text-black-50"></i>
+          </div>
+        `,
+        content: $(`
+          <div class="form-group mb-0">
+            <input type="text" class="form-control w-100" placeholder="Attribut">
+            <div class="invalid-feedback"></div>
+            <div class="d-flex justify-content-between mt-2">
+              <button class="btn btn-sm btn-outline-grey" type="button">Annuler</button>
+              <button class="btn brotn-sm btn-success" type="button">Ajouter</button>
+            </div>
+          </div>
+        `)
+      })
+      
+      // Actions on popover
+      btnAttr.on('shown.bs.popover', function() {
+        const popover = $('#' + btnAttr.attr('aria-describedby'))
+
+        // Closing
+        popover.find('.popover-header i.fa-times, .popover-body button:first').each(function() {
+          $(this).click(function() {
+            btnAttr.popover('hide')
+            $(popover.find('.popover-body input')).removeClass('is-invalid')
+          })
+        })
+        
+        // Submitting
+        popover.find('.popover-body button:nth-child(2)').click(function() {
+          const input = $(popover.find('.popover-body input'))
+          const value = input.val()
+
+          if (value !== '') {
+            addAttribute(value) && input.val('') && input.removeClass('is-invalid')
+          }
+        })
+        popover.find('.popover-body input').on('keypress', function(e) {
+          if (e.which === 13) {
+            const input = $(this)
+            const value = input.val()
+
+            if (value !== '') {
+              addAttribute(value) && input.val('') && input.removeClass('is-invalid')
+            }
+          }
+        })
+      })
+    })
+  </script>
+</body>
+</html>
